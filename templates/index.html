@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAIROS.SEEYEAL.CRYPTO</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg-dark: #050505; --card-bg: #0f1115; --border: #1f2937; }
+        body { font-family: 'Rajdhani', sans-serif; background-color: var(--bg-dark); color: #e5e7eb; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .card { background-color: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; }
+        .card-header { border-bottom: 1px solid var(--border); padding: 0.75rem 1rem; background: rgba(255,255,255,0.02); }
+        .text-up { color: #10b981; } 
+        .text-down { color: #ef4444; }
+        .badge { font-size: 0.7rem; padding: 2px 6px; border-radius: 2px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+    </style>
+</head>
+<body class="p-2 md:p-6 min-h-screen">
+    <div id="app" class="max-w-[1920px] mx-auto space-y-4">
+        
+        <header class="flex justify-between items-center mb-6 border-b border-gray-800 pb-4">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-8 bg-blue-600"></div>
+                <h1 class="text-3xl font-bold tracking-widest text-white">KAIROS<span class="text-blue-500">.</span>SEEYEAL<span class="text-gray-600">.CRYPTO</span></h1>
+            </div>
+            <div class="flex gap-4 text-xs font-mono text-gray-500">
+                <span class="flex items-center gap-1"><span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> SYSTEM ONLINE</span>
+                <span>{{ currentTime }}</span>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-12 gap-4">
+            <div class="col-span-12 lg:col-span-8 card h-[500px] flex flex-col">
+                <div class="card-header flex justify-between items-center">
+                    <h2 class="font-bold text-lg text-yellow-500">🚨 市场异动 (保留5分钟)</h2>
+                    <span class="badge bg-yellow-900 text-yellow-200">{{ marketData.length }} Active</span>
+                </div>
+                <div class="overflow-auto flex-1 p-2">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-gray-500 font-mono text-xs uppercase sticky top-0 bg-[#0f1115]">
+                            <tr>
+                                <th class="pb-2 pl-2">Token</th>
+                                <th class="pb-2">Tags / Time</th>
+                                <th class="pb-2">Price (5m%)</th>
+                                <th class="pb-2">Funding</th>
+                                <th class="pb-2">OI (5mΔ)</th>
+                                <th class="pb-2">CVD (30m/5m)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-mono text-sm">
+                            <tr v-for="m in marketData" :key="m.symbol" class="border-b border-gray-800/50 hover:bg-gray-800/30">
+                                <td class="py-2 pl-2 font-bold text-white">{{ m.symbol }}</td>
+                                <td>
+                                    <div class="flex flex-wrap gap-1 mb-1">
+                                        <span v-for="t in m.tags" class="badge bg-blue-900 text-blue-200">{{ t }}</span>
+                                        <span v-if="m.level>0" :class="m.level===4?'bg-red-900 text-red-200':'bg-gray-700 text-gray-300'" class="badge">
+                                            Fund Lv.{{m.level}}
+                                        </span>
+                                    </div>
+                                    <span v-if="m.event_ts > 0" class="text-xs text-gray-500">{{ timeAgo(m.event_ts) }}</span>
+                                </td>
+                                <td>
+                                    {{ formatNum(m.price_now) }} 
+                                    <span :class="getPctColor(calcPct(m.price_now, m.price_past))" class="text-xs ml-1">{{ calcPct(m.price_now, m.price_past) }}%</span>
+                                </td>
+                                <td>
+                                    <span :class="Math.abs(m.rate)>0.015 ? 'text-red-400 font-bold' : 'text-gray-300'">{{ (m.rate*100).toFixed(4) }}%</span>
+                                </td>
+                                <td>
+                                    {{ formatUnit(m.oi_now) }}
+                                    <span :class="m.oi_delta>0?'text-up':'text-down'" class="text-xs block">{{ formatUnit(m.oi_delta, true) }}</span>
+                                </td>
+                                <td>
+                                    <div class="flex flex-col text-xs">
+                                        <span :class="m.cvd_total>0?'text-up':'text-down'">T: {{ formatUnit(m.cvd_total, true) }}</span>
+                                        <span :class="m.cvd_5m>0?'text-up':'text-down'">5: {{ formatUnit(m.cvd_5m, true) }}</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-span-12 lg:col-span-4 flex flex-col gap-4 h-[500px]">
+                <div class="card flex-1 flex flex-col overflow-hidden">
+                    <div class="card-header"><h2 class="font-bold text-purple-400">🦈 跨所 OI 异常</h2></div>
+                    <div class="overflow-auto p-2 space-y-2">
+                        <div v-for="o in oiData" class="flex justify-between items-center p-2 bg-gray-800/30 border border-gray-800">
+                            <div>
+                                <div class="font-bold text-white">{{ o.symbol }} <span class="text-xs text-gray-500">{{ o.ex }}</span></div>
+                                <div class="text-xs text-gray-500">Target: {{ formatUnit(o.target_oi) }}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-purple-400">{{ (o.ratio*100).toFixed(0) }}%</div>
+                                <div class="text-xs text-gray-500">of BN</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card flex-1 flex flex-col overflow-hidden">
+                    <div class="card-header"><h2 class="font-bold text-blue-400">🌊 跨所价差 (>5%)</h2></div>
+                    <div class="overflow-auto p-2 space-y-2">
+                        <div v-for="s in spreadData" class="flex justify-between items-center p-2 bg-gray-800/30 border border-gray-800">
+                            <div>
+                                <div class="font-bold text-white">{{ s.coin }}</div>
+                                <div class="text-xs text-gray-500">vs {{ s.ex.toUpperCase().replace('_',' ') }}</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-bold text-lg" :class="s.pct>0?'text-up':'text-down'">{{ (s.pct*100).toFixed(2) }}%</div>
+                                <div class="text-xs text-gray-500">Spread</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-12 gap-4">
+            
+            <div class="col-span-12 md:col-span-4 card h-64 flex flex-col">
+                <div class="card-header flex justify-between">
+                    <h2 class="font-bold text-green-400">📡 上币 & 公告</h2>
+                    <span class="text-xs text-gray-500">Listing / Airdrop</span>
+                </div>
+                <div class="overflow-auto p-3 font-mono text-sm space-y-3">
+                    <div v-for="l in listingHistory" class="border-l-2 border-green-500 pl-3 relative">
+                        <div class="text-xs text-gray-500 flex justify-between">
+                            <span>{{ formatTime(l.time) }}</span>
+                            <span class="text-[10px] text-gray-600">{{ timeAgo(l.time) }}</span>
+                        </div>
+                        <div class="font-bold text-white">{{ l.exchange }}</div>
+                        <div class="text-green-300 break-words leading-tight mt-1">{{ Array.isArray(l.symbols) ? l.symbols.join(', ') : l.symbols }}</div>
+                    </div>
+                    <div v-if="listingHistory.length===0" class="text-gray-600 text-center mt-8">暂无新动态</div>
+                </div>
+            </div>
+
+            <div class="col-span-12 md:col-span-4 card h-64 flex flex-col">
+                <div class="card-header flex justify-between">
+                    <h2 class="font-bold text-indigo-400">🔗 链上地址监控</h2>
+                    <span class="text-xs text-gray-500">Whale Alert</span>
+                </div>
+                <div class="overflow-auto p-0">
+                    <table class="w-full text-sm">
+                        <tbody class="divide-y divide-gray-800">
+                            <tr v-for="w in onchainData" class="hover:bg-gray-800/50">
+                                <td class="p-3">
+                                    <div class="font-bold text-white">{{ w.name }}</div>
+                                    <div class="text-xs text-gray-500 font-mono">{{ w.chain }} | {{ w.wallet.substring(0,6) }}...</div>
+                                </td>
+                                <td class="p-3 text-right font-mono">
+                                    <div class="text-lg">{{ w.balance.toFixed(2) }}</div>
+                                    <div class="text-xs text-gray-400">{{ w.token_symbol }}</div>
+                                </td>
+                            </tr>
+                            <tr v-if="onchainData.length===0">
+                                <td colspan="2" class="p-4 text-center text-gray-600">未配置监控地址</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="col-span-12 md:col-span-4 card h-64 flex flex-col">
+                <div class="card-header flex justify-between">
+                    <h2 class="font-bold text-orange-400">🚧 充提状态变更</h2>
+                    <span class="text-xs text-gray-500">Wallet Status</span>
+                </div>
+                <div class="overflow-auto p-3 font-mono text-sm space-y-3">
+                    <div v-for="w in walletHistory" class="border-l-2 border-orange-500 pl-3">
+                        <div class="text-xs text-gray-500">{{ formatTime(w.time) }}</div>
+                        <div class="font-bold">{{ w.exchange }} - {{ w.coin }}</div>
+                        <div class="text-gray-300 whitespace-pre-wrap text-xs">{{ Array.isArray(w.change) ? w.change.join(' ') : w.change }}</div>
+                    </div>
+                    <div v-if="walletHistory.length===0" class="text-gray-600 text-center mt-8">充提状态稳定</div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="card h-96 flex flex-col">
+            <div class="card-header border-b border-gray-700 bg-gray-800/30">
+                <h2 class="font-bold text-gray-300 flex items-center gap-2">
+                    📜 全局通报历史 <span class="badge bg-gray-700">All Logs</span>
+                </h2>
+            </div>
+            <div class="overflow-auto p-4 space-y-2 font-mono text-sm">
+                <div v-for="h in historyLog" class="border-b border-gray-800 pb-2 mb-2 last:border-0 hover:bg-gray-800/20 p-2 rounded">
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-xs text-blue-500 font-bold">{{ formatFullTime(h.time) }}</span>
+                        <span class="text-xs text-gray-600">({{ timeAgo(h.time) }})</span>
+                    </div>
+                    <div class="text-gray-300 whitespace-pre-wrap pl-2 border-l-2 border-gray-700" v-html="formatLog(h.text)"></div>
+                </div>
+                <div v-if="historyLog.length===0" class="text-center text-gray-600 mt-10">暂无历史记录</div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp, ref, onMounted } = Vue
+
+        createApp({
+            setup() {
+                const currentTime = ref('')
+                const marketData = ref([])
+                const oiData = ref([])
+                const spreadData = ref([])
+                const onchainData = ref([])
+                const listingHistory = ref([])
+                const walletHistory = ref([])
+                const historyLog = ref([])
+
+                setInterval(() => {
+                    currentTime.value = new Date().toLocaleTimeString('en-US', { hour12: false })
+                }, 1000)
+
+                // 格式化工具
+                const formatNum = (val) => (!val) ? '0' : (val < 10 ? val.toFixed(4) : val.toFixed(2))
+                const formatUnit = (val, isDelta=false) => {
+                    if (!val) return '0'
+                    const abs = Math.abs(val)
+                    let sign = isDelta && val > 0 ? '+' : ''
+                    if (isDelta && val < 0) sign = '-'
+                    if (abs >= 1e6) return `${sign}${(abs/1e6).toFixed(1)}M`
+                    if (abs >= 1e3) return `${sign}${(abs/1e3).toFixed(0)}K`
+                    return `${sign}${abs.toFixed(0)}`
+                }
+                const calcPct = (now, past) => (!past) ? '0.00' : ((now - past) / past * 100).toFixed(2)
+                const getPctColor = (pct) => pct > 0 ? 'text-up' : (pct < 0 ? 'text-down' : 'text-gray-400')
+                const formatTime = (ts) => {
+                    const d = new Date(ts * 1000)
+                    return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}:${d.getSeconds().toString().padStart(2,'0')}`
+                }
+                const formatFullTime = (ts) => new Date(ts * 1000).toLocaleString()
+                const timeAgo = (ts) => {
+                    const diff = Math.floor(Date.now() / 1000 - ts)
+                    if (diff < 60) return `${diff}s ago`
+                    if (diff < 3600) return `${Math.floor(diff/60)}m ago`
+                    return `${Math.floor(diff/3600)}h ago`
+                }
+                const formatLog = (text) => text.replace(/\n/g, '<br>')
+
+                const fetchData = async () => {
+                    try {
+                        const [res1, res2, res3, res4, res5, res6, res7] = await Promise.all([
+                            fetch('/api/market/abnormal').then(r => r.json()),
+                            fetch('/api/market/oi_compare').then(r => r.json()),
+                            fetch('/api/spread/all').then(r => r.json()),
+                            fetch('/api/onchain/targets').then(r => r.json()),
+                            fetch('/api/listings/history').then(r => r.json()),
+                            fetch('/api/wallet/history').then(r => r.json()),
+                            fetch('/api/history/all').then(r => r.json())
+                        ])
+                        
+                        marketData.value = res1
+                        oiData.value = res2
+                        spreadData.value = res3
+                        onchainData.value = res4
+                        listingHistory.value = res5
+                        walletHistory.value = res6
+                        historyLog.value = res7
+                    } catch (e) { console.error("API Error", e) }
+                }
+
+                onMounted(() => {
+                    fetchData()
+                    setInterval(fetchData, 3000)
+                })
+
+                return {
+                    currentTime, marketData, oiData, spreadData, onchainData,
+                    listingHistory, walletHistory, historyLog,
+                    formatNum, formatUnit, calcPct, getPctColor, formatTime, formatFullTime, timeAgo, formatLog
+                }
+            }
+        }).mount('#app')
+    </script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+name: 币圈监控系统
+
+on:
+  workflow_dispatch:  # 手动触发
+  schedule:
+    - cron: '0 */6 * * *'  # 每6小时触发一次作为容错
+
+concurrency:
+  group: crypto-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350  # 5小时50分钟，避开6小时硬限制
+    
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+      
+      - name: 设置 Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          
+      - name: 安装依赖
+        run: pip install -r requirements.txt
+        
+      - name: 运行监控系统
+        env:
+          TG_BOT_TOKEN: ${{ secrets.TG_BOT_TOKEN }}
+          TG_CHAT_ID: ${{ secrets.TG_CHAT_ID }}
+        run: |
+          echo "🚀 启动币圈监控系统..."
+          echo "时间: $(date)"
+          # 运行 5小时50分钟 (21000秒)，然后自动结束
+          timeout 21000 python main.py || true
+          echo "⏰ 本轮监控结束，准备重启..."
+          
+      - name: 触发下一轮运行
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📡 触发下一轮 workflow..."
+          curl -X POST \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ github.repository }}/actions/workflows/monitor.yml/dispatches" \
+            -d '{"ref":"main"}' || echo "触发失败，将由定时任务恢复"
