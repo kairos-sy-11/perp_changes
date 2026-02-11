@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 class AnnouncementMonitor:
     def __init__(self, notifier_ref):
         self.notifier = notifier_ref
-        self.proxy = CONFIG['proxy'] or None  # NOTE: 空字符串转换为 None
+        self.proxy = CONFIG['proxy'] or None
         self.seen_ids = {
             "BINANCE": set(),
             "UPBIT": set()

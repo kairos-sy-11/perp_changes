@@ -11,7 +11,8 @@ class TelegramNotifier:
     def __init__(self):
         self.base_url = f"https://api.telegram.org/bot{CONFIG['telegram']['bot_token']}/sendMessage"
         self.chat_id = CONFIG['telegram']['chat_id']
-        self.proxy = CONFIG['proxy'] or None  # NOTE: 空字符串转换为 None
+        # NOTE: 空字符串代理会导致 aiohttp 超时，需转为 None 表示直连
+        self.proxy = CONFIG['proxy'] or None
         
         # [新增] 历史消息记录 (最近100条)
         self.history = deque(maxlen=100)
@@ -32,10 +33,8 @@ class TelegramNotifier:
         }
         async with aiohttp.ClientSession() as session:
             try:
-                # NOTE: 只有当 proxy 不为空时才传递 proxy 参数
                 async with session.post(self.base_url, json=payload, proxy=self.proxy) as resp:
                     if resp.status != 200:
                         logger.error(f"TG发送失败: {await resp.text()}")
             except Exception as e:
                 logger.error(f"TG网络错误: {e}")
-

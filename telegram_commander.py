@@ -12,7 +12,7 @@ class TelegramCommander:
     def __init__(self, onchain_monitor_ref):
         self.token = CONFIG['telegram']['bot_token']
         self.allowed_chat_id = CONFIG['telegram']['chat_id'] # 只允许管理员操作
-        self.proxy = CONFIG['proxy'] or None  # NOTE: 空字符串转换为 None
+        self.proxy = CONFIG['proxy'] or None
         self.onchain = onchain_monitor_ref
         self.last_update_id = 0
 

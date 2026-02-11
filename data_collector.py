@@ -91,7 +91,7 @@ class MarketData:
 class DataCollector:
     def __init__(self, data_store):
         self.data_store = data_store 
-        self.proxy = CONFIG['proxy'] or None  # NOTE: 空字符串转换为 None
+        self.proxy = CONFIG['proxy'] or None
         self.ws_connection = None 
 
     async def dynamic_subscribe(self, new_symbols):

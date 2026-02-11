@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 class ListingMonitor:
     def __init__(self, notifier_ref):
         self.notifier = notifier_ref
-        self.proxy = CONFIG['proxy'] or None  # NOTE: 空字符串转换为 None
+        self.proxy = CONFIG['proxy'] or None
         
         # 缓存已知的交易对
         self.known_symbols = {

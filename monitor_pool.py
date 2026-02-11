@@ -27,7 +27,7 @@ class SymbolPoolManager:
         self.collector = collector_ref
         self.notifier = notifier_ref
         self.file_path = CONFIG["pool"]["filename"]
-        self.proxy = CONFIG["proxy"] or None  # NOTE: 空字符串转换为 None
+        self.proxy = CONFIG["proxy"]
         self.blacklist = set(CONFIG["pool"].get("blacklist", []))
 
     async def initialize(self):

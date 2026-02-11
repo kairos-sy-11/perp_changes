@@ -12,7 +12,7 @@ class WalletMonitor:
     def __init__(self, notifier_ref, data_store_ref):
         self.notifier = notifier_ref
         self.data_store = data_store_ref 
-        self.proxy_url = CONFIG['proxy'] or None  # NOTE: 空字符串转换为 None
+        self.proxy_url = CONFIG['proxy'] or None
         
         self.last_status = {}
         self.is_initialized = False
@@ -27,10 +27,11 @@ class WalletMonitor:
         common_config = {
             'timeout': 30000, 
             'enableRateLimit': True,
+            'proxies': {
+                'http': self.proxy_url,
+                'https': self.proxy_url,
+            }
         }
-        # NOTE: 只有当 proxy 不为空时才配置代理
-        if self.proxy_url:
-            common_config['proxies'] = {'http': self.proxy_url, 'https': self.proxy_url}
         
         target_list = ['binance', 'okx', 'bybit', 'bitget', 'gate']
         

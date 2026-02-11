@@ -11,7 +11,7 @@ class OIComparer:
     def __init__(self, notifier_ref, data_store_ref):
         self.notifier = notifier_ref
         self.data_store = data_store_ref
-        self.proxy_url = CONFIG['proxy'] or None  # NOTE: 空字符串转换为 None
+        self.proxy_url = CONFIG['proxy'] or None
         self.ratios = CONFIG['thresholds']['oi_compare']
         self.active_alerts = set()
         self.latest_abnormal_data = [] # Web端数据源
@@ -23,10 +23,8 @@ class OIComparer:
         common_config = {
             'timeout': 15000,
             'enableRateLimit': True,
+            'proxies': {'http': self.proxy_url, 'https': self.proxy_url}
         }
-        # NOTE: 只有当 proxy 不为空时才配置代理
-        if self.proxy_url:
-            common_config['proxies'] = {'http': self.proxy_url, 'https': self.proxy_url}
         
         # [新增] okx
         target_list = ['bybit', 'bitget', 'gate', 'okx']
