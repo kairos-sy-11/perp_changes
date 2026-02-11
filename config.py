@@ -4,8 +4,8 @@ import os
 # NOTE: 敏感信息通过环境变量读取，本地开发可设置环境变量或使用 .env 文件
 CONFIG = {
     "telegram": {
-        "bot_token": os.getenv("TG_BOT_TOKEN", ""),
-        "chat_id": os.getenv("TG_CHAT_ID", "")
+        "bot_token": "8013902952:AAGDzLwUQaVyn8pKT5d7twMqk4rHMrJ6yLk",
+        "chat_id": "6688039597"
     },
     # NOTE: 代理配置，GitHub Actions 不需要代理，本地可通过环境变量设置
     "proxy": os.getenv("HTTP_PROXY", ""),
