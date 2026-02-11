@@ -147,16 +147,18 @@ class DataCollector:
             while True:
                 symbols = list(self.data_store.keys())
                 start_time = time.time()
-                batch_size = 20
+                # NOTE: 批量大小和间隔经过调优，避免触发 Binance 限频封禁
+                # 300 币种 × 2 接口 = 600 请求，分 30 批 × 1 秒间隔 ≈ 30 秒完成
+                batch_size = 10
                 for i in range(0, len(symbols), batch_size):
                     batch = symbols[i : i + batch_size]
                     tasks = [self._fetch_single_symbol(session, s) for s in batch]
                     await asyncio.gather(*tasks)
-                    await asyncio.sleep(0.2)
+                    await asyncio.sleep(1)
 
                 elapsed = time.time() - start_time
-                if elapsed < 30:
-                    await asyncio.sleep(30 - elapsed)
+                if elapsed < 60:
+                    await asyncio.sleep(60 - elapsed)
 
     async def _fetch_single_symbol(self, session, symbol):
         try:
