@@ -9,11 +9,7 @@ echo "🚀 开始部署币圈监控系统..."
 # 1. 更新系统 & 安装 Python
 echo "📦 安装系统依赖..."
 sudo apt update -y
-sudo apt install -y software-properties-common git
-# Ubuntu 20.04 默认没有 python3.10，需要添加 deadsnakes PPA
-sudo add-apt-repository -y ppa:deadsnakes/ppa
-sudo apt update -y
-sudo apt install -y python3.10 python3.10-venv python3.10-distutils
+sudo apt install -y python3 python3-venv python3-pip git
 
 # 2. 创建项目目录
 APP_DIR="$HOME/perp_monitor"
